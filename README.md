@@ -1,0 +1,105 @@
+# Stock Forecasting System
+
+The project is implemented backend-first. It contains an Express public API
+and an internal FastAPI forecasting service. The React frontend will be added
+after the backend milestone is validated.
+
+## Backend local setup
+
+1. Copy `.env.example` to `.env`.
+2. For local development without an external API key, set
+   `MARKET_DATA_PROVIDER=fixture`.
+3. Install and run the API:
+
+```powershell
+cd backend
+npm install
+npm run build
+npm start
+```
+
+Run the forecasting service in another terminal:
+
+```powershell
+cd forecasting
+py -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --port 8000
+```
+
+Health checks:
+
+- `GET http://localhost:3000/api/v1/health`
+- `GET http://localhost:8000/health`
+
+The Alpha Vantage key is server-side only. Provider data is labeled
+`latest_available`; this application does not claim real-time quotes.
+
+## Validation
+
+```powershell
+cd backend
+npm test
+npm run build
+cd ..\forecasting
+python -m pytest tests -q
+```
+
+The backend uses an in-memory cache in this first milestone so it can run
+without PostgreSQL; `database/migrations/001_initial.sql` defines the
+PostgreSQL persistence schema for the persistence integration milestone.
+Python package installation and test execution must use the same interpreter
+environment; if `pytest` is not importable, activate the environment created
+for `forecasting` before running the command.
+
+To enable PostgreSQL persistence with Supabase, add the direct PostgreSQL
+connection string from Supabase to `.env`:
+
+```dotenv
+USE_DATABASE=true
+DATABASE_URL=postgresql://postgres:URL_ENCODED_PASSWORD@db.your-project.supabase.co:5432/postgres
+DATABASE_POOL_MAX=5
+```
+
+Then apply the migrations:
+
+```powershell
+cd backend
+npm run build
+npm run migrate
+```
+
+The API health endpoint reports `database: "connected"` when Supabase is
+available. Password characters must be percent-encoded in `DATABASE_URL`;
+for example `^` becomes `%5E`, `@` becomes `%40`, and `#` becomes `%23`.
+
+## Frontend
+
+The application is intentionally public for this release; it has no login,
+registration, or user-account requirement.
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+The Vite development server runs at `http://localhost:5173` and proxies
+`/api` requests to the Express server at `http://localhost:3000`.
+
+Frontend features include stock search, quote and history range selection,
+historical/forecast charting, all supported forecast methods and horizons,
+model comparison, accessible data-table fallback, and CSV export.
+
+The frontend forecast horizons are limited to 1 day, 1 week, and 1 month so
+backtest metrics remain meaningful with the provider's available history.
+
+History ranges include 1 day, 5 days, 1 month, 3 months, and 6 months. These
+are daily market observations;
+the 1-day option means the latest completed daily session and does not provide
+intraday/hourly data.
+
+The tested Alpha Vantage plan returns compact daily history (up to 100
+observations). Until a provider plan or data source with full history is
+configured, ranges older than the returned coverage will display the same
+available observations and the frontend will show a coverage notice.

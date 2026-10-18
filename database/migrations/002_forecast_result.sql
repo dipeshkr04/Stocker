@@ -1,0 +1,1 @@
+ALTER TABLE forecast_runs ADD COLUMN IF NOT EXISTS result JSONB;
