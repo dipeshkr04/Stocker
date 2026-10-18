@@ -6,7 +6,7 @@ after the backend milestone is validated.
 
 ## Backend local setup
 
-1. Copy `.env.example` to `.env`.
+1. Copy `backend/.env.example` to `backend/.env`.
 2. For local development without an external API key, set
    `MARKET_DATA_PROVIDER=fixture`.
 3. Install and run the API:
@@ -34,6 +34,56 @@ Health checks:
 
 The Alpha Vantage key is server-side only. Provider data is labeled
 `latest_available`; this application does not claim real-time quotes.
+
+### Backend environment variables
+
+The complete `backend/.env.example` file contains:
+
+```dotenv
+NODE_ENV=development
+PORT=3000
+DATABASE_URL=******localhost:5432/stock_forecasting
+FRONTEND_ORIGIN=http://localhost:5173
+FORECAST_SERVICE_URL=http://localhost:8000
+MARKET_DATA_PROVIDER=alpha_vantage
+ALPHA_VANTAGE_API_KEY=replace_me
+```
+
+For local development:
+
+- Set `MARKET_DATA_PROVIDER=fixture` if you do not want to use Alpha Vantage.
+- Set `MARKET_DATA_PROVIDER=alpha_vantage` and replace
+  `ALPHA_VANTAGE_API_KEY` when using live market data.
+- Set `DATABASE_URL` to your PostgreSQL or Supabase connection string when
+  database persistence is enabled.
+- Keep `FRONTEND_ORIGIN` aligned with the URL serving the frontend.
+- Keep `FORECAST_SERVICE_URL` aligned with the address of the FastAPI service.
+
+Do not commit `backend/.env`. The Alpha Vantage key and database connection
+string must remain server-side secrets.
+
+### Forecasting environment variables
+
+Copy `forecasting/.env.example` to `forecasting/.env`. It contains:
+
+```dotenv
+PYTHON_ENV=development
+FORECAST_SERVICE_PORT=8000
+FORECAST_SERVICE_HOST=127.0.0.1
+```
+
+For local development, the forecasting service runs on
+`http://127.0.0.1:8000`. When deploying it to a hosting provider, bind it to
+all interfaces and use the provider-assigned port:
+
+```dotenv
+PYTHON_ENV=production
+FORECAST_SERVICE_HOST=0.0.0.0
+FORECAST_SERVICE_PORT=$PORT
+```
+
+The backend's `FORECAST_SERVICE_URL` must point to the deployed forecasting
+service URL.
 
 ## Validation
 
