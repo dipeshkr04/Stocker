@@ -5,17 +5,32 @@ import type { DailyBar, MarketDataProvider, Quote, SymbolResult } from "../types
 const endpoint = "https://www.alphavantage.co/query";
 const providerRateLimitMessage = "API rate limit reached. Please try again later.";
 const providerErrorMessage = "Market data provider request failed.";
+const logProviderError = (params: Record<string, string>, message: string, status?: number) => {
+  const redactedMessage = message.replaceAll(params.apikey, "[REDACTED_API_KEY]");
+  console.error(JSON.stringify({
+    event: "market_data_provider_error",
+    provider: "alpha_vantage",
+    function: params.function,
+    status: status ?? null,
+    message: redactedMessage
+  }));
+};
 const number = (value: string | undefined): number | null => value === undefined ? null : Number(value);
 const request = async (params: Record<string, string>, timeoutMs: number): Promise<Record<string, unknown>> => {
   const url = new URL(endpoint);
   Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value));
   const response = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
-  if (!response.ok) throw new AppError("PROVIDER_HTTP_ERROR", `Market data provider returned HTTP ${response.status}`, 502);
+  if (!response.ok) {
+    logProviderError(params, `Market data provider returned HTTP ${response.status}`, response.status);
+    throw new AppError("PROVIDER_HTTP_ERROR", "Market data provider request failed.", 502);
+  }
   const data = await response.json() as Record<string, unknown>;
   if (typeof data["Note"] === "string" || typeof data["Information"] === "string") {
+    logProviderError(params, String(data["Note"] ?? data["Information"]));
     throw new AppError("PROVIDER_QUOTA_EXCEEDED", providerRateLimitMessage, 429);
   }
   if (typeof data["Error Message"] === "string") {
+    logProviderError(params, data["Error Message"]);
     throw new AppError("PROVIDER_ERROR", providerErrorMessage, 502);
   }
   return data;
