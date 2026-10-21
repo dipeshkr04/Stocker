@@ -22,7 +22,6 @@ const displayDate = (value: string) => new Intl.DateTimeFormat(undefined, { mont
 type StockCache = { symbol: string; quote: Quote | null; bars: DailyBar[] };
 let stockCache: StockCache | null = null;
 type StockLoadResult = {
-  quoteResult: PromiseSettledResult<Quote>;
   historyResult: PromiseSettledResult<{ bars: DailyBar[]; range: string }>;
 };
 const stockLoadRequests = new Map<string, Promise<StockLoadResult>>();
@@ -38,15 +37,12 @@ const selectRange = (bars: DailyBar[], range: string) => {
   const filtered = completedBars.filter((bar) => new Date(`${bar.date}T00:00:00Z`) >= cutoff);
   return range === "5d" ? filtered.slice(-5) : filtered;
 };
-const wait = (milliseconds: number) => new Promise((resolve) => globalThis.setTimeout(resolve, milliseconds));
 const loadMarketData = (symbol: string): Promise<StockLoadResult> => {
   const existingRequest = stockLoadRequests.get(symbol);
   if (existingRequest) return existingRequest;
   const request = (async () => {
-    const quoteResult = await Promise.allSettled([api.quote(symbol)]).then(([result]) => result);
-    await wait(5_000);
     const historyResult = await Promise.allSettled([api.history(symbol, "max")]).then(([result]) => result);
-    return { quoteResult, historyResult };
+    return { historyResult };
   })();
   stockLoadRequests.set(symbol, request);
   void request.then(() => stockLoadRequests.delete(symbol), () => stockLoadRequests.delete(symbol));
@@ -82,21 +78,28 @@ export default function App() {
     setSelected(stock); setQuery(stock.symbol); setSuggestions([]); setLoading(true); setHistoryLoading(true); setError(""); setInitialError(""); setQuote(null); setForecast(null); setComparison([]);
     try {
       if (!stockCache) {
-        const { quoteResult, historyResult } = await loadMarketData(stock.symbol);
-        if (quoteResult.status === "fulfilled") {
-          setQuote(quoteResult.value);
-          stockCache = { symbol: stock.symbol, quote: quoteResult.value, bars: [] };
-        }
+        const { historyResult } = await loadMarketData(stock.symbol);
         if (historyResult.status === "fulfilled") {
+          const loadedBars = historyResult.value.bars;
+          const latestBar = loadedBars.at(-1);
+          const historyQuote = latestBar ? {
+            symbol: stock.symbol,
+            price: latestBar.adjustedClose ?? latestBar.close,
+            currency: latestBar.currency,
+            exchange: stock.exchange,
+            source: latestBar.source,
+            observedAt: `${latestBar.date}T00:00:00Z`,
+            freshness: "latest_available" as const
+          } : null;
+          setQuote(historyQuote);
           setAvailableBars(historyResult.value.bars);
           setBars(selectRange(historyResult.value.bars, range));
-          stockCache = { symbol: stock.symbol, quote: quoteResult.status === "fulfilled" ? quoteResult.value : null, bars: historyResult.value.bars };
+          stockCache = { symbol: stock.symbol, quote: historyQuote, bars: loadedBars };
         }
         if (isInitialLoad && historyResult.status === "rejected") {
           setInitialError(historyResult.reason instanceof Error ? historyResult.reason.message : "Unable to load the initial market history.");
         }
-        const rejected = [quoteResult, historyResult].find((result) => result.status === "rejected");
-        if (rejected?.status === "rejected") setError(rejected.reason instanceof Error ? rejected.reason.message : "Some market data could not be loaded.");
+        if (historyResult.status === "rejected") setError(historyResult.reason instanceof Error ? historyResult.reason.message : "Market history could not be loaded.");
       } else {
         setQuote(stockCache.quote);
         setAvailableBars(stockCache.bars);

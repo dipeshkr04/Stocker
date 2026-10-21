@@ -1,16 +1,19 @@
 import { AppError } from "../errors.js";
 import { ProviderQuota } from "./quota.js";
+import { createHash } from "node:crypto";
 import type { DailyBar, MarketDataProvider, Quote, SymbolResult } from "../types.js";
 
 const endpoint = "https://www.alphavantage.co/query";
 const providerRateLimitMessage = "API rate limit reached. Please try again later.";
 const providerErrorMessage = "Market data provider request failed.";
+const keyFingerprint = (apiKey: string) => createHash("sha256").update(apiKey).digest("hex").slice(0, 12);
 const logProviderError = (params: Record<string, string>, message: string, status?: number) => {
   const redactedMessage = message.replaceAll(params.apikey, "[REDACTED_API_KEY]");
   console.error(JSON.stringify({
     event: "market_data_provider_error",
     provider: "alpha_vantage",
     function: params.function,
+    keyFingerprint: keyFingerprint(params.apikey),
     status: status ?? null,
     message: redactedMessage
   }));

@@ -10,6 +10,7 @@ import { ForecastService } from "./services/forecast.js";
 import { compareRequestSchema, forecastRequestSchema, historyRangeSchema, symbolSchema } from "./schemas.js";
 import { PostgresRepository } from "./repositories/postgres.js";
 import { randomUUID } from "node:crypto";
+import { createHash } from "node:crypto";
 
 export const createApp = () => {
   const app = express();
@@ -100,7 +101,13 @@ export const createApp = () => {
 
 if (process.env.NODE_ENV !== "test") {
   const app = createApp();
-  const server = app.listen(config.port, () => console.log(`Backend listening on port ${config.port}`));
+  const server = app.listen(config.port, () => console.log(JSON.stringify({
+    event: "backend_started",
+    port: config.port,
+    marketDataProvider: config.marketDataProvider,
+    alphaVantageKeyConfigured: Boolean(config.alphaVantageApiKey && config.alphaVantageApiKey !== "replace_me"),
+    alphaVantageKeyFingerprint: config.alphaVantageApiKey ? createHash("sha256").update(config.alphaVantageApiKey).digest("hex").slice(0, 12) : null
+  })));
   const shutdown = async () => {
     server.close();
     process.exit(0);
