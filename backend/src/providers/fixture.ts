@@ -11,6 +11,7 @@ const bars = (symbol: string): DailyBar[] => Array.from({ length: 260 }, (_, ind
 }).filter((bar) => new Date(`${bar.date}T00:00:00Z`).getUTCDay() !== 0 && new Date(`${bar.date}T00:00:00Z`).getUTCDay() !== 6);
 
 export class FixtureProvider implements MarketDataProvider {
+  readonly source = "fixture";
   async searchSymbols(query: string): Promise<SymbolResult[]> {
     const symbols = [{ symbol: "AAPL", name: "Apple Inc.", exchange: "NASDAQ", currency: "USD" }, { symbol: "MSFT", name: "Microsoft Corporation", exchange: "NASDAQ", currency: "USD" }];
     return symbols.filter((item) => item.symbol.includes(query.toUpperCase()) || item.name.toUpperCase().includes(query.toUpperCase()));

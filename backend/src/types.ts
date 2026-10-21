@@ -42,6 +42,7 @@ export interface QuoteStore {
 }
 
 export interface MarketDataProvider {
+  readonly source: string;
   searchSymbols(query: string): Promise<SymbolResult[]>;
   getLatestQuote(symbol: string): Promise<Quote>;
   getDailyHistory(symbol: string, startDate?: string, endDate?: string): Promise<DailyBar[]>;

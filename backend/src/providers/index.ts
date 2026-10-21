@@ -16,5 +16,5 @@ export const createProvider = (): MarketDataProvider => {
   const unavailable = (): never => {
     throw new AppError("PROVIDER_NOT_CONFIGURED", "Configure MARKET_DATA_PROVIDER=fixture, provide FMP_API_KEY with MARKET_DATA_PROVIDER=fmp, or provide ALPHA_VANTAGE_API_KEY with MARKET_DATA_PROVIDER=alpha_vantage.", 503);
   };
-  return { searchSymbols: unavailable, getLatestQuote: unavailable, getDailyHistory: unavailable };
+  return { source: "unavailable", searchSymbols: unavailable, getLatestQuote: unavailable, getDailyHistory: unavailable };
 };

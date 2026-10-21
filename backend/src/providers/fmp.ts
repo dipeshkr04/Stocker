@@ -42,6 +42,7 @@ const observedDate = (value: unknown): string => {
 };
 
 export class FmpProvider implements MarketDataProvider {
+  readonly source = "fmp";
   constructor(private readonly apiKey: string, private readonly timeoutMs: number, private readonly quota = new ProviderQuota()) {}
 
   async searchSymbols(query: string): Promise<SymbolResult[]> {

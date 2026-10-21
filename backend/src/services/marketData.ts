@@ -43,7 +43,7 @@ export class MarketDataService {
     }
   }
   private async loadHistory(symbol: string, startDate?: string, endDate?: string) {
-    const allCached = await this.repository.getBars(symbol);
+    const allCached = (await this.repository.getBars(symbol)).filter((bar) => bar.source === this.provider.source);
     const coversStart = !startDate || (allCached[0]?.date !== undefined && allCached[0].date <= startDate);
     const coversEnd = !endDate || (allCached.at(-1)?.date !== undefined && allCached.at(-1)!.date >= endDate);
     if (allCached.length && coversStart && coversEnd) {

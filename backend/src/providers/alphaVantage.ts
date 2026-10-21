@@ -40,6 +40,7 @@ const request = async (params: Record<string, string>, timeoutMs: number): Promi
 };
 
 export class AlphaVantageProvider implements MarketDataProvider {
+  readonly source = "alpha_vantage";
   constructor(private readonly apiKey: string, private readonly timeoutMs: number, private readonly quota = new ProviderQuota()) {}
   async searchSymbols(query: string): Promise<SymbolResult[]> {
     const data = await this.quota.run(() => request({ function: "SYMBOL_SEARCH", keywords: query, apikey: this.apiKey }, this.timeoutMs));
