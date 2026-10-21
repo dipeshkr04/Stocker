@@ -33,6 +33,8 @@ const selectRange = (bars: DailyBar[], range: string) => {
   const filtered = completedBars.filter((bar) => new Date(`${bar.date}T00:00:00Z`) >= cutoff);
   return range === "5d" ? filtered.slice(-5) : filtered;
 };
+const isProviderQuotaError = (message: string) =>
+  /quota|rate limit|request limit|requests more sparingly|daily request/i.test(message);
 
 export default function App() {
   const [query, setQuery] = useState("");
@@ -205,7 +207,8 @@ export default function App() {
     return <main className="app-shell app-loading" aria-live="polite"><div className="loading-mark">S</div><p className="eyebrow accent">MARKET INTELLIGENCE</p><h1>Loading market data…</h1><p>Connecting to the backend and retrieving the latest available market history.</p><span className="loading-spinner" aria-hidden="true" /></main>;
   }
   if (initialError) {
-    return <main className="app-shell app-loading" aria-live="assertive"><div className="loading-mark">!</div><p className="eyebrow">MARKET DATA UNAVAILABLE</p><h1>Unable to load {selected.symbol} history</h1><p>{initialError}</p><p className="muted">If the provider limit has been reached, retrying will not help until the quota resets.</p><button className="primary-button retry-button" onClick={() => void loadStock(selected)}>Retry connection</button></main>;
+    const quotaError = isProviderQuotaError(initialError);
+    return <main className="app-shell app-loading" aria-live="assertive"><div className="loading-mark">!</div><p className="eyebrow">MARKET DATA UNAVAILABLE</p><h1>Unable to load {selected.symbol} history</h1><p>{initialError}</p><p className="muted">{quotaError ? "Alpha Vantage has rejected further requests. Do not retry repeatedly; wait for the provider limit to reset, then refresh the page once." : "Check that the backend and market-data provider are running, then try again."}</p>{!quotaError && <button className="primary-button retry-button" onClick={() => void loadStock(selected)}>Retry connection</button>}</main>;
   }
   return (
     <main className="app-shell">
