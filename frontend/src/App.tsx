@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "./services/api";
 import type { DailyBar, ForecastResult, Horizon, Method, Quote, SymbolResult } from "./types";
 import { PriceChart } from "./components/PriceChart";
@@ -70,8 +70,11 @@ export default function App() {
   const [initialError, setInitialError] = useState("");
   const [error, setError] = useState("");
   const [searching, setSearching] = useState(false);
+  const loadGeneration = useRef(0);
 
   const loadStock = async (stock: SymbolResult, range = historyRange) => {
+    const generation = ++loadGeneration.current;
+    const isCurrentLoad = () => generation === loadGeneration.current;
     const isInitialLoad = initialLoading || Boolean(initialError);
     const isDifferentStock = stockCache?.symbol !== stock.symbol;
     if (isDifferentStock) stockCache = null;
@@ -79,7 +82,7 @@ export default function App() {
     try {
       if (!stockCache) {
         const { historyResult } = await loadMarketData(stock.symbol);
-        if (historyResult.status === "fulfilled") {
+        if (historyResult.status === "fulfilled" && isCurrentLoad()) {
           const loadedBars = historyResult.value.bars;
           const latestBar = loadedBars.at(-1);
           const historyQuote = latestBar ? {
@@ -96,17 +99,27 @@ export default function App() {
           setBars(selectRange(historyResult.value.bars, range));
           stockCache = { symbol: stock.symbol, quote: historyQuote, bars: loadedBars };
         }
-        if (isInitialLoad && historyResult.status === "rejected") {
+        if (isInitialLoad && historyResult.status === "rejected" && isCurrentLoad()) {
           setInitialError(historyResult.reason instanceof Error ? historyResult.reason.message : "Unable to load the initial market history.");
         }
-        if (historyResult.status === "rejected") setError(historyResult.reason instanceof Error ? historyResult.reason.message : "Market history could not be loaded.");
+        if (historyResult.status === "rejected" && isCurrentLoad()) setError(historyResult.reason instanceof Error ? historyResult.reason.message : "Market history could not be loaded.");
       } else {
-        setQuote(stockCache.quote);
-        setAvailableBars(stockCache.bars);
-        setBars(selectRange(stockCache.bars, range));
+        if (isCurrentLoad()) {
+          setQuote(stockCache.quote);
+          setAvailableBars(stockCache.bars);
+          setBars(selectRange(stockCache.bars, range));
+        }
       }
-    } catch (loadError) { setError(loadError instanceof Error ? loadError.message : "Unable to load stock data."); }
-    finally { setLoading(false); setHistoryLoading(false); setInitialLoading(false); }
+    } catch (loadError) {
+      if (isCurrentLoad()) setError(loadError instanceof Error ? loadError.message : "Unable to load stock data.");
+    }
+    finally {
+      if (isCurrentLoad()) {
+        setLoading(false);
+        setHistoryLoading(false);
+        setInitialLoading(false);
+      }
+    }
   };
   const changeHistoryRange = async (range: string) => {
     setHistoryRange(range);
