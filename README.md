@@ -137,6 +137,16 @@ npm run dev
 The Vite development server runs at `http://localhost:5173` and proxies
 `/api` requests to the Express server at `http://localhost:3000`.
 
+For a deployed frontend, copy `frontend/.env.example` to `frontend/.env` and
+set `VITE_API_BASE_URL` to the public URL of the deployed Express backend:
+
+```dotenv
+VITE_API_BASE_URL=https://your-backend-service.onrender.com
+```
+
+`VITE_API_BASE_URL` is a public browser setting and must not contain API keys,
+database credentials, or other secrets.
+
 Frontend features include stock search, quote and history range selection,
 historical/forecast charting, all supported forecast methods and horizons,
 model comparison, accessible data-table fallback, and CSV export.

@@ -1,7 +1,9 @@
 import type { DailyBar, ForecastResult, Horizon, Method, Quote, SymbolResult } from "../types";
 
+const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/$/, "");
+
 const request = async <T>(path: string, options?: RequestInit): Promise<T> => {
-  const response = await fetch(path, { headers: { "content-type": "application/json" }, ...options });
+  const response = await fetch(`${apiBaseUrl}${path}`, { headers: { "content-type": "application/json" }, ...options });
   if (!response.ok) {
     const body = await response.json().catch(() => null) as { error?: { message?: string } } | null;
     throw new Error(body?.error?.message ?? `Request failed (${response.status})`);
