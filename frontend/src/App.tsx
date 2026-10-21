@@ -41,7 +41,7 @@ const loadMarketData = (symbol: string): Promise<StockLoadResult> => {
   const existingRequest = stockLoadRequests.get(symbol);
   if (existingRequest) return existingRequest;
   const request = (async () => {
-    const historyResult = await Promise.allSettled([api.history(symbol, "max")]).then(([result]) => result);
+    const historyResult = await Promise.allSettled([api.history(symbol, "6m")]).then(([result]) => result);
     return { historyResult };
   })();
   stockLoadRequests.set(symbol, request);
