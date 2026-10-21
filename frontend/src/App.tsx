@@ -33,6 +33,7 @@ const selectRange = (bars: DailyBar[], range: string) => {
   const filtered = completedBars.filter((bar) => new Date(`${bar.date}T00:00:00Z`) >= cutoff);
   return range === "5d" ? filtered.slice(-5) : filtered;
 };
+const wait = (milliseconds: number) => new Promise((resolve) => globalThis.setTimeout(resolve, milliseconds));
 const isProviderQuotaError = (message: string) =>
   /quota|rate limit|request limit|requests more sparingly|daily request/i.test(message);
 
@@ -63,7 +64,9 @@ export default function App() {
     setSelected(stock); setQuery(stock.symbol); setSuggestions([]); setLoading(true); setHistoryLoading(true); setError(""); setInitialError(""); setQuote(null); setForecast(null); setComparison([]);
     try {
       if (!stockCache) {
-        const [quoteResult, historyResult] = await Promise.allSettled([api.quote(stock.symbol), api.history(stock.symbol, "max")]);
+        const quoteResult = await Promise.allSettled([api.quote(stock.symbol)]).then(([result]) => result);
+        await wait(5_000);
+        const historyResult = await Promise.allSettled([api.history(stock.symbol, "max")]).then(([result]) => result);
         if (quoteResult.status === "fulfilled") {
           setQuote(quoteResult.value);
           stockCache = { symbol: stock.symbol, quote: quoteResult.value, bars: [] };

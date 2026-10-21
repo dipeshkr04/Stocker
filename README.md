@@ -151,6 +151,11 @@ Frontend features include stock search, quote and history range selection,
 historical/forecast charting, all supported forecast methods and horizons,
 model comparison, accessible data-table fallback, and CSV export.
 
+On a fresh stock load, the frontend requests the quote first and waits five
+seconds before requesting history. This spacing helps stay within Alpha
+Vantage's free one-request-per-second burst limit; the initial dashboard load
+can therefore take several seconds.
+
 The frontend forecast horizons are limited to 1 day, 1 week, and 1 month so
 backtest metrics remain meaningful with the provider's available history.
 
