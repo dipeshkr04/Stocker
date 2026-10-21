@@ -1,3 +1,5 @@
+import { ZodError } from "zod";
+
 export class AppError extends Error {
   constructor(
     public readonly code: string,
@@ -10,6 +12,7 @@ export class AppError extends Error {
 
 export const errorResponse = (error: unknown) => {
   if (error instanceof AppError) return { status: error.status, body: { error: { code: error.code, message: error.message } } };
+  if (error instanceof ZodError) return { status: 400, body: { error: { code: "INVALID_REQUEST", message: error.message } } };
   if (error instanceof Error) return { status: 500, body: { error: { code: "INTERNAL_ERROR", message: error.message } } };
   return { status: 500, body: { error: { code: "INTERNAL_ERROR", message: "Unexpected server error" } } };
 };

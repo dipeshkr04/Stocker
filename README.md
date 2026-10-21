@@ -35,6 +35,23 @@ Health checks:
 The Alpha Vantage key is server-side only. Provider data is labeled
 `latest_available`; this application does not claim real-time quotes.
 
+### Financial Modeling Prep provider
+
+The backend also supports Financial Modeling Prep (FMP). To use it, set the
+following variables in `backend/.env` or in the backend hosting environment:
+
+```dotenv
+MARKET_DATA_PROVIDER=fmp
+FMP_API_KEY=your_fmp_api_key
+```
+
+The FMP key remains server-side and is never sent to the frontend. The FMP
+provider uses the stable API endpoints for symbol search, quotes, and
+historical end-of-day prices. History requests are capped at the latest six
+months to match the frontend's supported coverage. If `MARKET_DATA_PROVIDER` is set to
+`alpha_vantage`, the backend continues to use `ALPHA_VANTAGE_API_KEY`
+instead.
+
 ### Backend environment variables
 
 The complete `backend/.env.example` file contains:
@@ -47,6 +64,7 @@ FRONTEND_ORIGIN=http://localhost:5173
 FORECAST_SERVICE_URL=http://localhost:8000
 MARKET_DATA_PROVIDER=alpha_vantage
 ALPHA_VANTAGE_API_KEY=replace_me
+FMP_API_KEY=replace_me
 ```
 
 For local development:

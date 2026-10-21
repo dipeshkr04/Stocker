@@ -19,6 +19,7 @@ export const config = {
   forecastServiceUrl: (process.env.FORECAST_SERVICE_URL ?? "http://127.0.0.1:8000").replace("://localhost", "://127.0.0.1"),
   marketDataProvider: process.env.MARKET_DATA_PROVIDER ?? "alpha_vantage",
   alphaVantageApiKey: process.env.ALPHA_VANTAGE_API_KEY,
+  fmpApiKey: process.env.FMP_API_KEY,
   useDatabase: boolean(process.env.USE_DATABASE, false),
   databasePoolMax: Number(process.env.DATABASE_POOL_MAX ?? 10),
   requestTimeoutMs: Number(process.env.REQUEST_TIMEOUT_MS ?? 10000)
