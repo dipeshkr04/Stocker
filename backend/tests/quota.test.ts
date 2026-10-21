@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import { ProviderQuota } from "../src/providers/quota.js";
 
 describe("provider quota", () => {
-  it("rejects the sixth request in one minute", () => {
+  it("rejects the sixth request in one minute", async () => {
     const quota = new ProviderQuota();
-    for (let index = 0; index < 5; index += 1) quota.consume();
-    expect(() => quota.consume()).toThrowError(/one minute/);
+    await Promise.all(Array.from({ length: 5 }, () => quota.consume()));
+    await expect(quota.consume()).rejects.toThrowError(/one minute/);
   });
 });
