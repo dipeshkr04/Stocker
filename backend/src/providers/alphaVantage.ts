@@ -3,6 +3,8 @@ import { ProviderQuota } from "./quota.js";
 import type { DailyBar, MarketDataProvider, Quote, SymbolResult } from "../types.js";
 
 const endpoint = "https://www.alphavantage.co/query";
+const providerRateLimitMessage = "API rate limit reached. Please try again later.";
+const providerErrorMessage = "Market data provider request failed.";
 const number = (value: string | undefined): number | null => value === undefined ? null : Number(value);
 const request = async (params: Record<string, string>, timeoutMs: number): Promise<Record<string, unknown>> => {
   const url = new URL(endpoint);
@@ -10,9 +12,12 @@ const request = async (params: Record<string, string>, timeoutMs: number): Promi
   const response = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
   if (!response.ok) throw new AppError("PROVIDER_HTTP_ERROR", `Market data provider returned HTTP ${response.status}`, 502);
   const data = await response.json() as Record<string, unknown>;
-  if (typeof data["Note"] === "string") throw new AppError("PROVIDER_QUOTA_EXCEEDED", "Market data provider quota exceeded; retry later.", 429);
-  if (typeof data["Information"] === "string") throw new AppError("PROVIDER_QUOTA_EXCEEDED", data["Information"], 429);
-  if (typeof data["Error Message"] === "string") throw new AppError("PROVIDER_ERROR", data["Error Message"], 502);
+  if (typeof data["Note"] === "string" || typeof data["Information"] === "string") {
+    throw new AppError("PROVIDER_QUOTA_EXCEEDED", providerRateLimitMessage, 429);
+  }
+  if (typeof data["Error Message"] === "string") {
+    throw new AppError("PROVIDER_ERROR", providerErrorMessage, 502);
+  }
   return data;
 };
 
