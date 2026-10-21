@@ -6,7 +6,7 @@ export class ProviderQuota {
   private nextRequestAt = 0;
   private requestQueue: Promise<void> = Promise.resolve();
 
-  async consume(): Promise<void> {
+  run<T>(operation: () => Promise<T>): Promise<T> {
     const request = this.requestQueue.then(async () => {
       const now = Date.now();
       this.prune(this.minuteRequests, now - 60_000);
@@ -24,8 +24,9 @@ export class ProviderQuota {
       this.nextRequestAt = sentAt + 1_000;
       this.minuteRequests.push(sentAt);
       this.dayRequests.push(sentAt);
+      return operation();
     });
-    this.requestQueue = request.catch(() => undefined);
+    this.requestQueue = request.then(() => undefined, () => undefined);
     return request;
   }
 

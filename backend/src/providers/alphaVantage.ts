@@ -39,8 +39,7 @@ const request = async (params: Record<string, string>, timeoutMs: number): Promi
 export class AlphaVantageProvider implements MarketDataProvider {
   constructor(private readonly apiKey: string, private readonly timeoutMs: number, private readonly quota = new ProviderQuota()) {}
   async searchSymbols(query: string): Promise<SymbolResult[]> {
-    await this.quota.consume();
-    const data = await request({ function: "SYMBOL_SEARCH", keywords: query, apikey: this.apiKey }, this.timeoutMs);
+    const data = await this.quota.run(() => request({ function: "SYMBOL_SEARCH", keywords: query, apikey: this.apiKey }, this.timeoutMs));
     const matches = Array.isArray(data.bestMatches) ? data.bestMatches : [];
     return matches.map((item) => {
       const value = item as Record<string, string>;
@@ -48,15 +47,13 @@ export class AlphaVantageProvider implements MarketDataProvider {
     }).filter((item) => Boolean(item.symbol));
   }
   async getLatestQuote(symbol: string): Promise<Quote> {
-    await this.quota.consume();
-    const data = await request({ function: "GLOBAL_QUOTE", symbol, apikey: this.apiKey }, this.timeoutMs);
+    const data = await this.quota.run(() => request({ function: "GLOBAL_QUOTE", symbol, apikey: this.apiKey }, this.timeoutMs));
     const quote = data["Global Quote"] as Record<string, string> | undefined;
     if (!quote?.["05. price"]) throw new AppError("PROVIDER_EMPTY", `No quote found for ${symbol}`, 404);
     return { symbol, price: Number(quote["05. price"]), currency: "USD", exchange: null, source: "alpha_vantage", observedAt: `${quote["07. latest trading day"]}T00:00:00Z`, freshness: "latest_available" };
   }
   async getDailyHistory(symbol: string, startDate?: string, endDate?: string): Promise<DailyBar[]> {
-    await this.quota.consume();
-    const data = await request({ function: "TIME_SERIES_DAILY", symbol, outputsize: "compact", apikey: this.apiKey }, this.timeoutMs);
+    const data = await this.quota.run(() => request({ function: "TIME_SERIES_DAILY", symbol, outputsize: "compact", apikey: this.apiKey }, this.timeoutMs));
     const series = data["Time Series (Daily)"] as Record<string, Record<string, string>> | undefined;
     if (!series) throw new AppError("PROVIDER_EMPTY", `No history found for ${symbol}`, 404);
     return Object.entries(series).map(([date, item]) => ({
