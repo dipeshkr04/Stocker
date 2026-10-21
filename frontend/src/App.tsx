@@ -118,26 +118,7 @@ export default function App() {
   };
   useEffect(() => { void loadStock(selected); }, []);
   useEffect(() => {
-    const normalizedQuery = query.trim();
-    if (normalizedQuery.length < 2 || normalizedQuery.toUpperCase() === selected.symbol) {
-      setSuggestions([]);
-      return;
-    }
-    const controller = new AbortController();
-    const timer = globalThis.setTimeout(() => {
-      void api.search(normalizedQuery, controller.signal)
-        .then((result) => { if (!controller.signal.aborted) setSuggestions(result.results); })
-        .catch((searchError: unknown) => {
-          if (!controller.signal.aborted) {
-            setSuggestions([]);
-            console.warn("Stock search failed.", searchError);
-          }
-        });
-    }, 600);
-    return () => {
-      globalThis.clearTimeout(timer);
-      controller.abort();
-    };
+    setSuggestions([]);
   }, [query, selected.symbol]);
   const runForecast = async () => {
     if (!method) return;
@@ -155,6 +136,10 @@ export default function App() {
   const submitSearch = async () => {
     const normalizedQuery = query.trim();
     if (normalizedQuery.length < 2 || searching) return;
+    if (/^[A-Za-z0-9.-]+$/.test(normalizedQuery)) {
+      await loadStock({ symbol: normalizedQuery.toUpperCase(), name: normalizedQuery.toUpperCase(), exchange: null, currency: "USD" });
+      return;
+    }
     if (suggestions[0]) {
       await loadStock(suggestions[0]);
       return;
