@@ -230,7 +230,7 @@ export default function App() {
   }
   if (initialError) {
     const quotaError = isProviderQuotaError(initialError);
-    return <main className="app-shell app-loading" aria-live="assertive"><div className="loading-mark">!</div><p className="eyebrow">MARKET DATA UNAVAILABLE</p><h1>Unable to load {selected.symbol} history</h1><p>{initialError}</p><p className="muted">{quotaError ? "Alpha Vantage has rejected further requests. Do not retry repeatedly; wait for the provider limit to reset, then refresh the page once." : "Check that the backend and market-data provider are running, then try again."}</p>{!quotaError && <button className="primary-button retry-button" onClick={() => void loadStock(selected)}>Retry connection</button>}</main>;
+    return <main className="app-shell app-loading" aria-live="assertive"><div className="loading-mark">!</div><p className="eyebrow">MARKET DATA UNAVAILABLE</p><h1>Unable to load {selected.symbol} history</h1><p>{initialError}</p><p className="muted">{quotaError ? "The market-data provider has rejected further requests. Wait for the provider limit to reset, then refresh the page once." : "Check that the backend and market-data provider are running, then try again."}</p>{!quotaError && <button className="primary-button retry-button" onClick={() => void loadStock(selected)}>Retry connection</button>}</main>;
   }
   return (
     <main className="app-shell">
