@@ -21,6 +21,11 @@ const money = (value: number, currency = "USD") => new Intl.NumberFormat(undefin
 const displayDate = (value: string) => new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", year: "numeric" }).format(new Date(`${value.slice(0, 10)}T12:00:00`));
 type StockCache = { symbol: string; quote: Quote | null; bars: DailyBar[] };
 let stockCache: StockCache | null = null;
+type StockLoadResult = {
+  quoteResult: PromiseSettledResult<Quote>;
+  historyResult: PromiseSettledResult<{ bars: DailyBar[]; range: string }>;
+};
+const stockLoadRequests = new Map<string, Promise<StockLoadResult>>();
 const rangeDays: Record<string, number | undefined> = { "1d": 1, "5d": 7, "1m": 31, "3m": 93, "6m": 186, "1y": 366, "5y": 1826 };
 const selectRange = (bars: DailyBar[], range: string) => {
   if (range === "max") return bars;
@@ -34,6 +39,19 @@ const selectRange = (bars: DailyBar[], range: string) => {
   return range === "5d" ? filtered.slice(-5) : filtered;
 };
 const wait = (milliseconds: number) => new Promise((resolve) => globalThis.setTimeout(resolve, milliseconds));
+const loadMarketData = (symbol: string): Promise<StockLoadResult> => {
+  const existingRequest = stockLoadRequests.get(symbol);
+  if (existingRequest) return existingRequest;
+  const request = (async () => {
+    const quoteResult = await Promise.allSettled([api.quote(symbol)]).then(([result]) => result);
+    await wait(5_000);
+    const historyResult = await Promise.allSettled([api.history(symbol, "max")]).then(([result]) => result);
+    return { quoteResult, historyResult };
+  })();
+  stockLoadRequests.set(symbol, request);
+  void request.then(() => stockLoadRequests.delete(symbol), () => stockLoadRequests.delete(symbol));
+  return request;
+};
 const isProviderQuotaError = (message: string) =>
   /quota|rate limit|request limit|requests more sparingly|daily request/i.test(message);
 
@@ -64,9 +82,7 @@ export default function App() {
     setSelected(stock); setQuery(stock.symbol); setSuggestions([]); setLoading(true); setHistoryLoading(true); setError(""); setInitialError(""); setQuote(null); setForecast(null); setComparison([]);
     try {
       if (!stockCache) {
-        const quoteResult = await Promise.allSettled([api.quote(stock.symbol)]).then(([result]) => result);
-        await wait(5_000);
-        const historyResult = await Promise.allSettled([api.history(stock.symbol, "max")]).then(([result]) => result);
+        const { quoteResult, historyResult } = await loadMarketData(stock.symbol);
         if (quoteResult.status === "fulfilled") {
           setQuote(quoteResult.value);
           stockCache = { symbol: stock.symbol, quote: quoteResult.value, bars: [] };
